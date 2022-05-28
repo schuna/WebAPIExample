@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace HPlusSports.API.Models
+namespace WebApi.Models
 {
     public class ShopContext : DbContext
     {

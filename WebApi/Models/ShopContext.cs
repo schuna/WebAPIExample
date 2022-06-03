@@ -4,8 +4,17 @@ namespace WebApi.Models
 {
     public class ShopContext : DbContext
     {
-        public ShopContext(DbContextOptions<ShopContext> options) : base(options)
+        private readonly IConfiguration _configuration;
+
+        public ShopContext(IConfiguration configuration)
         {
+            _configuration = configuration;
+        }
+        
+        protected override void OnConfiguring(DbContextOptionsBuilder options)
+        {
+            // connect to sql server with connection string from app settings
+            options.UseSqlServer(_configuration.GetConnectionString("WebApiDatabase"));
         }
 
         public DbSet<Product> Products { get; set; } = null!;

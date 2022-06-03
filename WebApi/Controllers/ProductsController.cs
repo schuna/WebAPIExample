@@ -77,7 +77,7 @@ namespace WebApi.Controllers
 
             return CreatedAtAction(
                 "GetProduct",
-                new {id = product.Id},
+                new { id = product.Id },
                 product);
         }
 

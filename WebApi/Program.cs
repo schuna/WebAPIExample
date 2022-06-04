@@ -1,3 +1,4 @@
+using System.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +10,7 @@ using WebApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<ShopContext>(options =>
-    options.UseInMemoryDatabase("Shop"));
+builder.Services.AddDbContext<ShopContext>();
 builder.Services.AddControllers();
 builder.Services.AddApiVersioning(options =>
 {

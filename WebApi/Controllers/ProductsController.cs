@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Classes;
-using WebApi.Models;
+using WebApi.DataAccess.Helpers;
+using WebApi.DataAccess.Models;
 
 namespace WebApi.Controllers
 {
@@ -28,31 +29,32 @@ namespace WebApi.Controllers
                     p => p.Price >= queryParameters.MinPrice.Value &&
                          p.Price <= queryParameters.MaxPrice.Value);
             }
-        
+
             if (!string.IsNullOrEmpty(queryParameters.SearchTerm))
             {
                 products = products.Where(p =>
                     p.Sku!.ToLower().Contains(queryParameters.SearchTerm.ToLower()) ||
                     p.Name!.ToLower().Contains(queryParameters.SearchTerm.ToLower()));
             }
-        
+
             if (!string.IsNullOrEmpty(queryParameters.Sku))
             {
                 products = products.Where(p => p.Sku == queryParameters.Sku);
             }
-        
+
             if (!string.IsNullOrEmpty(queryParameters.Name))
             {
                 products = products.Where(
                     predicate: p => p.Name != null &&
                                     p.Name.ToLower().Contains(queryParameters.Name.ToLower()));
             }
-        
-            if (!string.IsNullOrEmpty(queryParameters.SortBy) && typeof(Product).GetProperty(queryParameters.SortBy) != null)
+
+            if (!string.IsNullOrEmpty(queryParameters.SortBy) &&
+                typeof(Product).GetProperty(queryParameters.SortBy) != null)
             {
                 products = products.OrderByCustom(queryParameters.SortBy, queryParameters.SortOrder);
             }
-            
+
             return Ok(await products.ToArrayAsync());
         }
 
@@ -94,14 +96,9 @@ namespace WebApi.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException) when (!ProductExists(id))
             {
-                if (_context.Products.Find(id) == null)
-                {
-                    return NotFound();
-                }
-
-                throw;
+                return NotFound();
             }
 
             return NoContent();
@@ -143,6 +140,11 @@ namespace WebApi.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(products);
+        }
+
+        private bool ProductExists(int id)
+        {
+            return _context.Products.Any(e => e.Id == id);
         }
     }
 }

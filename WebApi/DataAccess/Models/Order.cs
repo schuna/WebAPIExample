@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace WebApi.Models
+namespace WebApi.DataAccess.Models
 {
     public class Order
     {

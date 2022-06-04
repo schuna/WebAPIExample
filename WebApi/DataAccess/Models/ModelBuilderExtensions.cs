@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace WebApi.Models
+namespace WebApi.DataAccess.Models
 {
     public static class ModelBuilderExtensions
     {
@@ -24,10 +24,6 @@ namespace WebApi.Models
                     Price = 68,
                     IsAvailable = true
                 });
-
-            modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, Email = "adam@example.com" },
-                new User { Id = 2, Email = "barbara@example.com" });
         }
     }
 }

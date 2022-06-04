@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace WebApi.Models
+namespace WebApi.DataAccess.Models
 {
     public class Product
     {

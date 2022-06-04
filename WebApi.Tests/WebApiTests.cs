@@ -18,7 +18,7 @@ public class WebApiTests
 
     public WebApiTests()
     {
-        _application = new WebApplicationFactory<Program>();
+        _application = new ShopApiApplication();
         _client = _application.CreateClient();
     }
 

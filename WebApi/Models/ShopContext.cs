@@ -4,24 +4,14 @@ namespace WebApi.Models
 {
     public class ShopContext : DbContext
     {
-        private readonly IConfiguration _configuration;
-
-        public ShopContext(IConfiguration configuration)
+        public ShopContext(DbContextOptions options) : base(options)
         {
-            _configuration = configuration;
-        }
-        
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            // connect to sql server with connection string from app settings
-            var connectionString = _configuration.GetConnectionString("WebApiDatabase");
-            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
 
-        public DbSet<Product> Products { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Order> Orders { get; set; }
-        public DbSet<User> Users { get; set; }
+        public DbSet<Product> Products { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

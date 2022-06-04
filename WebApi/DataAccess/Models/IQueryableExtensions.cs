@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace WebApi.Models
+namespace WebApi.DataAccess.Models
 {
     public static class IQueryableExtensions
     {

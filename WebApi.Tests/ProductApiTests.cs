@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -6,17 +7,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using WebApi.Models;
+using WebApi.DataAccess.Helpers;
+using WebApi.DataAccess.Models;
 
 
 namespace WebApi;
 
-public class WebApiTests
+public class ProductApiTests
 {
     private WebApplicationFactory<Program> _application;
     private HttpClient _client;
 
-    public WebApiTests()
+    public ProductApiTests()
     {
         _application = new ShopApiApplication();
         _client = _application.CreateClient();
@@ -34,6 +36,23 @@ public class WebApiTests
         var response = await _client.GetFromJsonAsync<List<Product>>("/products");
         Assert.IsNotNull(response);
         Assert.IsTrue(response!.Count == 33);
+    }
+
+    [Test]
+    [TestCase(@"MinPrice=50&MaxPrice=100", 9)]
+    [TestCase(@"SearchTerm=Coat", 1)]
+    [TestCase(@"Sku=AWWBTSC", 1)]
+    [TestCase(@"Name=Bamboo Thermal Ski Coat", 1)]
+    [TestCase(@"", 33)]
+    [TestCase(@"Page=1", 33)]
+    [TestCase(@"Size=20", 33)]
+    [TestCase(@"SortBy=Name&SortOrder=asc", 33)]
+    public async Task GetAllProducts_WhenCalledWithParameter_ReturnFilteredResult(string parameters, int expectedCount)
+    {
+        var response = await _client.GetFromJsonAsync<List<Product>>($@"/products?{parameters}");
+        Console.WriteLine(response!.Count);
+        Assert.IsNotNull(response);
+        Assert.IsTrue(response!.Count == expectedCount);
     }
 
     [Test]
@@ -71,11 +90,18 @@ public class WebApiTests
     }
 
     [Test]
-    public async Task PutProduct_WhenCalledSuccessful_ReturnStatus()
+    [TestCase(6, true, HttpStatusCode.NoContent)]
+    [TestCase(900, false, HttpStatusCode.NotFound)]
+    [TestCase(1000, false, HttpStatusCode.BadRequest)]
+    
+    public async Task PutProduct_WhenCalledSuccessful_ReturnStatus(
+        int id,
+        bool successStatusCode, 
+        HttpStatusCode expected)
     {
         var product = new Product
         {
-            Id = 6,
+            Id = id % 999,
             Description = "Promotion",
             CategoryId = 1,
             Name = "Thermal Fleece Jacket",
@@ -83,9 +109,39 @@ public class WebApiTests
             Price = 54,
             IsAvailable = true
         };
-        var response = await _client.PutAsJsonAsync<Product>($"/products/{product.Id}", product);
+        var response = await _client.PutAsJsonAsync($"/products/{id}", product);
+        Assert.That(response.IsSuccessStatusCode, Is.EqualTo(successStatusCode));
+        Assert.That(response.StatusCode, Is.EqualTo(expected));
+    }
 
-        Assert.IsTrue(response.IsSuccessStatusCode);
+    [Test]
+    public async Task DeleteProduct_WhenCalledSuccessful_ReturnDeletedItem()
+    {
+        var response = await _client.DeleteAsync($"/products/5");
+        Assert.NotNull(response);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    public async Task DeleteProduct_WhenEntryNotExists_ReturnNotFound()
+    {
+        var response = await _client.DeleteAsync("/products/900");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task DeleteProducts_WhenCalledSuccessful_ReturnDeletedItems()
+    {
+        var response = await _client.PostAsync($"/products/Delete?ids=3&ids=4", null);
+        Assert.NotNull(response);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    public async Task DeleteProducts_WhenEntryNotExists_ReturnNotFound()
+    {
+        var response = await _client.PostAsync($"/products/Delete?ids=3&ids=900", null);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
     private async Task SetInmemoryDb()

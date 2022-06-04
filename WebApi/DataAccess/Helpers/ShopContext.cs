@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using WebApi.DataAccess.Models;
 
-namespace WebApi.Models
+namespace WebApi.DataAccess.Helpers
 {
     public class ShopContext : DbContext
     {

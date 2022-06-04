@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Classes;
-using WebApi.Models;
+using WebApi.DataAccess.Helpers;
+using WebApi.DataAccess.Models;
 
 namespace WebApi.Controllers
 {
@@ -48,7 +49,8 @@ namespace WebApi.Controllers
                                     p.Name.ToLower().Contains(queryParameters.Name.ToLower()));
             }
 
-            if (!string.IsNullOrEmpty(queryParameters.SortBy) && typeof(Product).GetProperty(queryParameters.SortBy) != null)
+            if (!string.IsNullOrEmpty(queryParameters.SortBy) &&
+                typeof(Product).GetProperty(queryParameters.SortBy) != null)
             {
                 products = products.OrderByCustom(queryParameters.SortBy, queryParameters.SortOrder);
             }
@@ -94,14 +96,9 @@ namespace WebApi.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException) when (!ProductExists(id))
             {
-                if (_context.Products.Find(id) == null)
-                {
-                    return NotFound();
-                }
-
-                throw;
+                return NotFound();
             }
 
             return NoContent();
@@ -143,6 +140,11 @@ namespace WebApi.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(products);
+        }
+
+        private bool ProductExists(int id)
+        {
+            return _context.Products.Any(e => e.Id == id);
         }
     }
 }

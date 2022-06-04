@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using WebApi.Models;
+using WebApi.DataAccess.Helpers;
 
 namespace WebApi;
 

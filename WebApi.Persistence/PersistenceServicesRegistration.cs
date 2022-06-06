@@ -15,8 +15,9 @@ namespace WebApi.Persistence
         )
         {
             services.AddDbContext<WebApiDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("WebApiDatabase")));
+                options.UseMySql(
+                    configuration.GetConnectionString("WebApiDatabase"), 
+                    ServerVersion.AutoDetect(configuration.GetConnectionString("WebApiDatabase"))));
 
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 

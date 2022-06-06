@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 
 namespace WebApi.Persistence
@@ -17,7 +18,7 @@ namespace WebApi.Persistence
             var builder = new DbContextOptionsBuilder<WebApiDbContext>();
             var connectionString = configuration.GetConnectionString("WebApiDatabase");
 
-            builder.UseSqlServer(connectionString);
+            builder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 
             return new WebApiDbContext(builder.Options);
         }

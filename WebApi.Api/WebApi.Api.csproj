@@ -20,6 +20,7 @@
         </PackageReference>
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+        <InternalsVisibleTo Include="WebApi.Tests" />
     </ItemGroup>
 
     <ItemGroup>

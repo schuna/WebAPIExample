@@ -1,19 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using WebApi.Domain;
 using WebApi.Domain.Common;
 
 namespace WebApi.Persistence
 {
-
-    public class WebApiDbContext : DbContext
+    public class WebApiDbContext : IdentityDbContext<User>
     {
         public WebApiDbContext(DbContextOptions<WebApiDbContext> options) : base(options)
         {
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(WebApiDbContext).Assembly);
+            base.OnModelCreating(builder);
+            builder.ApplyConfigurationsFromAssembly(typeof(WebApiDbContext).Assembly);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -32,5 +33,6 @@ namespace WebApi.Persistence
 
         public DbSet<Product> Products { get; set; } = null!;
         public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     }
 }

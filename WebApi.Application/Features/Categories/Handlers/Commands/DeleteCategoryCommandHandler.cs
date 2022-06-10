@@ -8,13 +8,13 @@ namespace WebApi.Application.Features.Categories.Handlers.Commands;
 
 public class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategoryCommand>
 {
+    private IMapper Mapper { get; }
     private readonly ICategoryRepository _categoryRepository;
-    private readonly IMapper _mapper;
 
     public DeleteCategoryCommandHandler(ICategoryRepository categoryRepository, IMapper mapper)
     {
+        Mapper = mapper;
         _categoryRepository = categoryRepository;
-        _mapper = mapper;
     }
 
     public async Task<Unit> Handle(DeleteCategoryCommand command, CancellationToken cancellationToken)

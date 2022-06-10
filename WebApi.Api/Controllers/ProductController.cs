@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Application.DTOs.Product;
 using WebApi.Application.Features.Products.Requests.Commands;
@@ -9,6 +10,7 @@ namespace WebApi.Api.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProductController : ControllerBase
     {
         private readonly IMediator _mediator;

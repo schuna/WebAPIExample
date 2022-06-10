@@ -11,7 +11,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.5" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.5" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
         <PackageReference Include="NUnit" Version="3.13.2" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.0.0" />
@@ -20,7 +19,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\WebApi.Api\WebApi.Api.csproj" />
-      <ProjectReference Include="..\WebApi.Persistence\WebApi.Persistence.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="config.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

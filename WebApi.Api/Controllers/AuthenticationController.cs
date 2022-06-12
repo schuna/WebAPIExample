@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using WebApi.Domain;
+using WebApi.Domain.Models.Helpers;
 using WebApi.Domain.ViewModel;
 using WebApi.Persistence;
 
@@ -55,7 +56,21 @@ namespace WebApi.Api.Controllers
             };
             var result = await _userManager.CreateAsync(user, registerViewModel.Password);
 
-            if (result.Succeeded) return Ok("User created");
+            if (result.Succeeded)
+            {
+                switch (registerViewModel.Role)
+                {
+                    case UserRoles.Admin:
+                        await _userManager.AddToRoleAsync(user, UserRoles.Admin);
+                        break;
+                    case UserRoles.Worker:
+                        await _userManager.AddToRoleAsync(user, UserRoles.Worker);
+                        break;
+                }
+
+                return Ok("User created");
+            }
+
             return BadRequest("User could not be created");
         }
 
@@ -93,7 +108,7 @@ namespace WebApi.Api.Controllers
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
             var storedToken =
-                await _context.RefreshTokens.FirstOrDefaultAsync(x => 
+                await _context.RefreshTokens.FirstOrDefaultAsync(x =>
                     x.Token == tokenRequestViewModel.RefreshToken);
             var dbUser = await _userManager.FindByIdAsync(storedToken!.UserId);
             try
@@ -125,6 +140,12 @@ namespace WebApi.Api.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            foreach (var userRole in userRoles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+            }
 
             var authSigninKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]));
             var token = new JwtSecurityToken(

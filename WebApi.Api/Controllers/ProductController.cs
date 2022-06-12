@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using WebApi.Application.DTOs.Product;
 using WebApi.Application.Features.Products.Requests.Commands;
 using WebApi.Application.Features.Products.Requests.Queries;
+using WebApi.Domain.Models.Helpers;
 
 namespace WebApi.Api.Controllers
 {
-
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = UserRoles.Worker + "," + UserRoles.Admin)]
     public class ProductController : ControllerBase
     {
         private readonly IMediator _mediator;

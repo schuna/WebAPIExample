@@ -9,4 +9,5 @@ public class RegisterViewModel
     [Required] public string EmailAddress { get; set; } = null!;
     [Required] public string UserName { get; set; } = null!;
     [Required] public string Password { get; set; } = null!;
+    [Required] public string Role { get; set; } = null!;
 }

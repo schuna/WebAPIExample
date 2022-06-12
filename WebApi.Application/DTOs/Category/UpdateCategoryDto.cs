@@ -7,6 +7,5 @@ namespace WebApi.Application.DTOs.Category
     public class UpdateCategoryDto : BaseDto, ICategoryDto
     {
         public string? Name { get; set; }
-        public virtual List<ProductDto>? Products { get; set; }
     }
 }

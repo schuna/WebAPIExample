@@ -93,6 +93,12 @@ app.UseCors("CorsPolicy");
 
 app.MapControllers();
 
-AppDbInitializer.SeedRolesToDb(app).Wait();
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+using (var scope = scopeFactory.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    await AppDbInitializer.Seed(userManager, roleManager);
+}
 
 app.Run();

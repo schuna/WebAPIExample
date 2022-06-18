@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -10,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using WebApi.Application.DTOs.Category;
 using WebApi.Application.DTOs.Product;
@@ -24,15 +21,15 @@ public class ProductApiTests
 {
     private readonly WebApplicationFactory<Program> _application;
     private readonly HttpClient _client;
-    private AuthResultViewModel _authResultViewModel = null!;
     private Product? _product;
     private CreateProductDto _createProductDto = null!;
     private WebApiDbContext _webApiDbContext = null!;
     private Product? _productCreated;
     private Category? _category;
     private CreateCategoryDto _createCategoryDto = null!;
-    private Category _categoryCreated = null!;
     private RegisterViewModel _registeredUser = null!;
+    private TokenRequestViewModel _tokenRequest = null!;
+    private List<Category> _categories = null!;
 
     public ProductApiTests()
     {
@@ -43,9 +40,9 @@ public class ProductApiTests
     [OneTimeSetUp]
     public async Task Setup()
     {
-        await GetAccessToken();
+        RegisteredUser();
+        await GetToken();
         await SetUpDatabase();
-        await RegisterUser();
     }
 
     [OneTimeTearDown]
@@ -57,6 +54,7 @@ public class ProductApiTests
     [Test]
     public async Task GetAllProducts_WhenCalledSuccessful_ReturnEntryList()
     {
+        await SetDefaultHeadersAuthorization();
         var response = await _client.GetFromJsonAsync<List<ProductListDto>>("api/Product");
         Assert.IsNotNull(response);
         Assert.IsTrue(response!.Count != 0);
@@ -65,6 +63,7 @@ public class ProductApiTests
     [Test]
     public async Task GetAllCategories_WhenSuccessful_ReturnEntries()
     {
+        await SetDefaultHeadersAuthorization();
         var respose = await _client.GetFromJsonAsync<List<CategoryListDto>>("api/Category");
         Assert.That(respose!.Count, Is.Not.Zero);
         Assert.That(respose.LastOrDefault()!.Id, Is.EqualTo(_category!.Id));
@@ -74,6 +73,7 @@ public class ProductApiTests
     [Test]
     public async Task GetProductById_WhenSuccessful_ReturnEntry()
     {
+        await SetDefaultHeadersAuthorization();
         var response = await _client.GetFromJsonAsync<ProductDto>(
             $"api/product/{_product!.Id}");
         Assert.That(response!.Id, Is.EqualTo(_product.Id));
@@ -84,6 +84,7 @@ public class ProductApiTests
     [Test]
     public async Task GetCategoryById_WhenSuccessful_ReturnEntry()
     {
+        await SetDefaultHeadersAuthorization();
         var response = await _client.GetFromJsonAsync<CategoryDto>($"api/Category/{_category!.Id}");
         Assert.That(response!.Id, Is.EqualTo(_category.Id));
         Assert.That(response.Name, Is.EqualTo(_category.Name));
@@ -92,6 +93,7 @@ public class ProductApiTests
     [Test]
     public async Task PostProduct_WhenSuccessful_ReturnOk()
     {
+        await SetDefaultHeadersAuthorization();
         _createProductDto = new CreateProductDto
         {
             CategoryId = 1,
@@ -110,19 +112,22 @@ public class ProductApiTests
     [Test]
     public async Task PostCategory_WhenSuccessful_ReturnOk()
     {
+        await SetDefaultHeadersAuthorization();
         _createCategoryDto = new CreateCategoryDto
         {
             Name = "Sweater"
         };
         var response = await _client.PostAsJsonAsync("/api/Category", _createCategoryDto);
         response.EnsureSuccessStatusCode();
-        _categoryCreated = (await response.Content.ReadFromJsonAsync<Category>())!;
+        var categoryCreated = (await response.Content.ReadFromJsonAsync<Category>())!;
         Assert.IsTrue(response.IsSuccessStatusCode);
+        _categories.Add(categoryCreated);
     }
 
     [Test]
     public async Task PutProduct_WhenSuccessful_ReturnNoContent()
     {
+        await SetDefaultHeadersAuthorization();
         var productUpdate = new UpdateProductDto
         {
             Id = _product!.Id,
@@ -142,6 +147,7 @@ public class ProductApiTests
     [Test]
     public async Task PutCategory_WhenSuccessful_ReturnNoContent()
     {
+        await SetDefaultHeadersAuthorization();
         var updateCategoryDto = new UpdateCategoryDto
         {
             Id = _category!.Id,
@@ -152,8 +158,7 @@ public class ProductApiTests
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
     }
 
-    [Test]
-    public async Task Login_WhenSuccessful_ReturnOk()
+    private async Task GetToken()
     {
         var loginViewModel = new LoginViewModel
         {
@@ -161,24 +166,22 @@ public class ProductApiTests
             Password = _registeredUser.Password
         };
         var response = await _client.PostAsJsonAsync("api/Authentication/login-user", loginViewModel);
-        Assert.IsTrue(response.IsSuccessStatusCode);
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        response.EnsureSuccessStatusCode();
+        var token = await response.Content.ReadFromJsonAsync<AuthResultViewModel>();
+        _tokenRequest = new TokenRequestViewModel
+        {
+            RefreshToken = token!.RefreshToken,
+            Token = token.Token
+        };
     }
 
-    private async Task GetAccessToken()
+    private async Task SetDefaultHeadersAuthorization()
     {
-        TokenRequestViewModel tokenRequest;
-        using (var reader = new StreamReader("config.json"))
-        {
-            var json = await reader.ReadToEndAsync();
-            tokenRequest = JsonConvert.DeserializeObject<TokenRequestViewModel>(json)!;
-        }
-
-        var response = await _client.PostAsJsonAsync("api/Authentication/refresh-token", tokenRequest);
+        var response = await _client.PostAsJsonAsync("api/Authentication/refresh-token", _tokenRequest);
         response.EnsureSuccessStatusCode();
-        _authResultViewModel = (await response.Content.ReadFromJsonAsync<AuthResultViewModel>())!;
+         var authResultViewModel = (await response.Content.ReadFromJsonAsync<AuthResultViewModel>())!;
         _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _authResultViewModel.Token);
+            new AuthenticationHeaderValue("Bearer", authResultViewModel.Token);
     }
 
     private async Task SetUpDatabase()
@@ -213,36 +216,39 @@ public class ProductApiTests
         using var scope = _application.Services.CreateScope();
         var provider = scope.ServiceProvider;
         _webApiDbContext = provider.GetRequiredService<WebApiDbContext>();
-        await _webApiDbContext.Categories.AddAsync(
-            new Category
+
+        _categories = new List<Category>
+        {
+            new ()
+            {
+                Id = 1,
+                Name = "Consumer Electronics"
+            },
+            new ()
             {
                 Id = 2,
                 Name = "Sports Wear"
             }
-        );
-        await _webApiDbContext.SaveChangesAsync();
-        var categories = await _webApiDbContext.Categories.ToListAsync();
-        _category = categories.LastOrDefault();
+        };
+
+        foreach (var category in _categories)
+        {
+            await _webApiDbContext.Categories.AddAsync(category);
+            await _webApiDbContext.SaveChangesAsync();
+        }
+        _category = _categories.LastOrDefault();
     }
 
-    private async Task RegisterUser()
+    private void RegisteredUser()
     {
-        try
+        _registeredUser = new RegisterViewModel
         {
-            _registeredUser = new RegisterViewModel
-            {
-                FirstName = "User",
-                LastName = "Anonymous",
-                EmailAddress = "User.Anonymous@amail.com",
-                UserName = "UserAnonymous",
-                Password = "P@sSw0rd!"
-            };
-            await _client.PostAsJsonAsync("api/Authentication/register-user", _registeredUser);
-        }
-        catch (Exception exception)
-        {
-            Console.WriteLine(exception.Message);
-        }
+            FirstName = "Admin",
+            LastName = "User",
+            EmailAddress = "admin.user@email.com",
+            UserName = "Admin.User",
+            Password = "Admin.User@2022"
+        };
     }
 
     private async Task TearDownDatabase()
@@ -252,7 +258,9 @@ public class ProductApiTests
         await using var webApiDbContext = provider.GetRequiredService<WebApiDbContext>();
         await _client.DeleteAsync($"api/Product/{_product!.Id}");
         await _client.DeleteAsync($"api/Product/{_productCreated!.Id}");
-        await _client.DeleteAsync($"api/Category/{_category!.Id}");
-        await _client.DeleteAsync($"api/Category/{_categoryCreated!.Id}");
+        foreach (var category in _categories)
+        {
+            await _client.DeleteAsync($"api/Category/{category.Id}");
+        }
     }
 }
